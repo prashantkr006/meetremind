@@ -28,10 +28,10 @@ async function main() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'meetremind-icons-'))
   console.log('Generating icons from icon.svg ...')
 
-  // Write PNGs at each ICO size to temp dir
+  // Write PNGs at each required size to temp dir
   const icoSizes = [16, 32, 48, 256]
   const tmpPaths = {}
-  for (const size of [...icoSizes, 512]) {
+  for (const size of [...icoSizes, 512, 1024]) {
     const buf = await sharp(svg).resize(size, size).png().toBuffer()
     const p = path.join(tmpDir, `icon-${size}.png`)
     fs.writeFileSync(p, buf)
@@ -40,9 +40,9 @@ async function main() {
   }
   console.log()
 
-  // 512x512 PNG → icon.png
-  fs.copyFileSync(tmpPaths[512], path.join(iconsDir, 'icon.png'))
-  console.log('✓ icon.png (512x512) — Linux / macOS fallback')
+  // 1024x1024 PNG → icon.png (macOS requires 1024x1024 for icns conversion)
+  fs.copyFileSync(tmpPaths[1024], path.join(iconsDir, 'icon.png'))
+  console.log('✓ icon.png (1024x1024) — macOS / Linux')
 
   // Multi-size ICO → icon.ico
   const icoBuffer = await pngToIco(icoSizes.map(s => tmpPaths[s]))
@@ -53,9 +53,7 @@ async function main() {
   fs.rmSync(tmpDir, { recursive: true })
 
   console.log()
-  console.log('icon.icns (macOS):')
-  console.log('  electron-builder generates it automatically from icon.png when built on macOS')
-  console.log('  or via GitHub Actions — see .github/workflows/release.yml')
+  console.log('icon.icns: electron-builder auto-generates from icon.png during mac build')
 }
 
 main().catch(err => { console.error(err.message); process.exit(1) })
