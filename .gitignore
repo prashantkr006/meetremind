@@ -1,0 +1,23 @@
+node_modules/
+dist/
+dist-electron/
+out/
+release/
+
+# Secrets — never commit
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Electron builder cache
+/build/
