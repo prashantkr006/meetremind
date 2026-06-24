@@ -63,8 +63,9 @@ async function createMainWindow() {
     mainWindow.loadFile(path.join(__dirname, '../../renderer/index.html'))
   }
 
-  // Always open DevTools while we're iterating (remove before shipping)
-  mainWindow.webContents.openDevTools({ mode: 'detach' })
+  if (isDev()) {
+    mainWindow.webContents.openDevTools({ mode: 'detach' })
+  }
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
