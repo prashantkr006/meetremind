@@ -48,6 +48,7 @@
     "electron": "^31.0.1",
     "electron-builder": "^24.13.3",
     "png-to-ico": "^3.0.1",
+    "png2icons": "^2.0.1",
     "postcss": "^8.4.39",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -74,14 +75,27 @@
       "!**/*.map"
     ],
     "extraResources": [
-      { "from": "assets/sounds", "to": "sounds", "filter": ["**/*.mp3"] }
+      {
+        "from": "assets/sounds",
+        "to": "sounds",
+        "filter": [
+          "**/*.mp3"
+        ]
+      }
     ],
     "publish": {
       "provider": "github",
       "releaseType": "release"
     },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "assets/icons/icon.ico",
       "requestedExecutionLevel": "asInvoker"
     },
@@ -95,7 +109,15 @@
       "deleteAppDataOnUninstall": false
     },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "icon": "assets/icons/icon.icns",
       "category": "public.app-category.productivity",
       "darkModeSupport": true,
@@ -107,10 +129,21 @@
       "title": "MeetRemind ${version}",
       "icon": "assets/icons/icon.icns",
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ],
-      "window": { "width": 540, "height": 380 }
+      "window": {
+        "width": 540,
+        "height": 380
+      }
     },
     "linux": {
       "target": "AppImage",

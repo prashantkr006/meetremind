@@ -51,24 +51,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate icons
+      - name: Generate icons (includes icon.icns via png2icons)
         run: npm run generate-icons
-
-      - name: Generate icon.icns (using macOS native iconutil)
-        run: |
-          mkdir -p MeetRemind.iconset
-          sips -z 16   16   assets/icons/icon.png --out MeetRemind.iconset/icon_16x16.png
-          sips -z 32   32   assets/icons/icon.png --out MeetRemind.iconset/icon_16x16@2x.png
-          sips -z 32   32   assets/icons/icon.png --out MeetRemind.iconset/icon_32x32.png
-          sips -z 64   64   assets/icons/icon.png --out MeetRemind.iconset/icon_32x32@2x.png
-          sips -z 128  128  assets/icons/icon.png --out MeetRemind.iconset/icon_128x128.png
-          sips -z 256  256  assets/icons/icon.png --out MeetRemind.iconset/icon_128x128@2x.png
-          sips -z 256  256  assets/icons/icon.png --out MeetRemind.iconset/icon_256x256.png
-          sips -z 512  512  assets/icons/icon.png --out MeetRemind.iconset/icon_256x256@2x.png
-          sips -z 512  512  assets/icons/icon.png --out MeetRemind.iconset/icon_512x512.png
-          sips -z 1024 1024 assets/icons/icon.png --out MeetRemind.iconset/icon_512x512@2x.png
-          iconutil -c icns MeetRemind.iconset -o assets/icons/icon.icns
-          rm -rf MeetRemind.iconset
 
       - name: Build
         run: npm run build

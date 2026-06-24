@@ -1,16 +1,7 @@
 #!/usr/bin/env node
-/**
- * Generates icon files from assets/icons/icon.svg:
- *   icon.png  (512x512) — Linux + macOS fallback
- *   icon.ico  (multi-size) — Windows
- *
- * For macOS icon.icns, electron-builder converts icon.png automatically
- * when building on a Mac or via GitHub Actions (see .github/workflows/release.yml).
- *
- * Run: npm run generate-icons
- */
 const sharp = require('sharp')
 const pngToIco = require('png-to-ico').default
+const png2icons = require('png2icons')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -28,7 +19,6 @@ async function main() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'meetremind-icons-'))
   console.log('Generating icons from icon.svg ...')
 
-  // Write PNGs at each required size to temp dir
   const icoSizes = [16, 32, 48, 256]
   const tmpPaths = {}
   for (const size of [...icoSizes, 512, 1024]) {
@@ -40,20 +30,23 @@ async function main() {
   }
   console.log()
 
-  // 1024x1024 PNG → icon.png (macOS requires 1024x1024 for icns conversion)
+  // 1024x1024 PNG → icon.png
   fs.copyFileSync(tmpPaths[1024], path.join(iconsDir, 'icon.png'))
-  console.log('✓ icon.png (1024x1024) — macOS / Linux')
+  console.log('✓ icon.png (1024x1024) — Linux / macOS source')
 
-  // Multi-size ICO → icon.ico
+  // Multi-size ICO → icon.ico (Windows)
   const icoBuffer = await pngToIco(icoSizes.map(s => tmpPaths[s]))
   fs.writeFileSync(path.join(iconsDir, 'icon.ico'), icoBuffer)
   console.log('✓ icon.ico (16/32/48/256) — Windows')
 
-  // Clean up temp files
-  fs.rmSync(tmpDir, { recursive: true })
+  // 1024x1024 PNG → icon.icns (macOS) via pure-JS png2icons (no sips/iconutil needed)
+  const input = fs.readFileSync(tmpPaths[1024])
+  const icns = png2icons.createICNS(input, png2icons.BICUBIC, 0)
+  if (!icns) throw new Error('png2icons failed to create ICNS')
+  fs.writeFileSync(path.join(iconsDir, 'icon.icns'), icns)
+  console.log('✓ icon.icns — macOS')
 
-  console.log()
-  console.log('icon.icns: electron-builder auto-generates from icon.png during mac build')
+  fs.rmSync(tmpDir, { recursive: true })
 }
 
 main().catch(err => { console.error(err.message); process.exit(1) })
