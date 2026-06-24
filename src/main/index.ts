@@ -34,6 +34,11 @@ app.on('second-instance', () => {
   }
 })
 
+function getAppIcon() {
+  const iconName = process.platform === 'win32' ? 'icon.ico' : 'icon.png'
+  return path.join(app.getAppPath(), 'assets', 'icons', iconName)
+}
+
 async function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 960,
@@ -41,6 +46,7 @@ async function createMainWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'MeetRemind',
+    icon: getAppIcon(),
     backgroundColor: '#0f172a',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
