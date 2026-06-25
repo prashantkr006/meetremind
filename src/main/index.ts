@@ -5,7 +5,7 @@ import { StoreManager } from './store'
 import { OverlayManager } from './overlay'
 import { CalendarManager } from './calendar'
 import { AuthManager } from './auth'
-import { ReminderScheduler } from './scheduler'
+import { ReminderEngine } from './reminders'
 import { createTrayIcon } from './trayIcon'
 
 function isDev() { return process.env.NODE_ENV === 'development' }
@@ -16,11 +16,10 @@ let storeManager: StoreManager
 let overlayManager: OverlayManager
 let calendarManager: CalendarManager
 let authManager: AuthManager
-let scheduler: ReminderScheduler
+let reminderEngine: ReminderEngine
 
 app.setName('MeetRemind')
 
-// Single instance lock
 if (!app.requestSingleInstanceLock()) {
   app.quit()
   process.exit(0)
@@ -67,10 +66,7 @@ async function createMainWindow() {
     mainWindow.webContents.openDevTools({ mode: 'detach' })
   }
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
-  })
-
+  mainWindow.once('ready-to-show', () => mainWindow?.show())
   mainWindow.on('close', (e) => {
     e.preventDefault()
     mainWindow?.hide()
@@ -82,7 +78,6 @@ function createTray() {
   tray = new Tray(icon)
   tray.setToolTip('MeetRemind')
   updateTrayMenu()
-
   tray.on('double-click', () => {
     mainWindow?.show()
     mainWindow?.focus()
@@ -95,9 +90,7 @@ function updateTrayMenu() {
 
   const meetingItems = meetings.slice(0, 5).map((m) => ({
     label: `${m.title} — ${new Date(m.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-    click: () => {
-      if (m.joinUrl) shell.openExternal(m.joinUrl)
-    },
+    click: () => { if (m.joinUrl) shell.openExternal(m.joinUrl) },
   }))
 
   const menu = Menu.buildFromTemplate([
@@ -108,14 +101,11 @@ function updateTrayMenu() {
       : [{ label: 'No upcoming meetings', enabled: false }, { type: 'separator' as const }]),
     {
       label: 'Test Animation',
-      click: () => overlayManager.showTest(calendarManager.getUpcomingMeetings()),
+      click: () => reminderEngine.triggerTest(calendarManager.getUpcomingMeetings()),
     },
     {
       label: 'Settings',
-      click: () => {
-        mainWindow?.show()
-        mainWindow?.focus()
-      },
+      click: () => { mainWindow?.show(); mainWindow?.focus() },
     },
     {
       label: settings.soundEnabled ? 'Mute Sounds' : 'Unmute Sounds',
@@ -126,12 +116,7 @@ function updateTrayMenu() {
       },
     },
     { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => {
-        app.exit(0)
-      },
-    },
+    { label: 'Quit', click: () => app.exit(0) },
   ])
 
   tray?.setContextMenu(menu)
@@ -147,36 +132,24 @@ function setupIpc() {
   })
 
   ipcMain.handle('test-animation', () => {
-    overlayManager.showTest(calendarManager.getUpcomingMeetings())
+    reminderEngine.triggerTest(calendarManager.getUpcomingMeetings())
   })
 
-  ipcMain.handle('open-url', (_e, url: string) => {
-    shell.openExternal(url)
-  })
+  ipcMain.handle('open-url', (_e, url: string) => shell.openExternal(url))
 
-  ipcMain.handle('get-upcoming-meetings', () => {
-    return calendarManager.getUpcomingMeetings()
-  })
+  ipcMain.handle('get-upcoming-meetings', () => calendarManager.getUpcomingMeetings())
 
-  ipcMain.handle('get-auth-status', () => {
-    return authManager.getStatus()
-  })
+  ipcMain.handle('get-auth-status', () => authManager.getStatus())
 
-  ipcMain.handle('connect-google', async () => {
-    return authManager.connectGoogle()
-  })
+  ipcMain.handle('connect-google', async () => authManager.connectGoogle())
 
-  ipcMain.handle('connect-microsoft', async (_e, useWorkAccount?: boolean) => {
-    return authManager.connectMicrosoft(useWorkAccount)
-  })
+  ipcMain.handle('connect-microsoft', async (_e, useWorkAccount?: boolean) =>
+    authManager.connectMicrosoft(useWorkAccount),
+  )
 
-  ipcMain.handle('disconnect-google', async () => {
-    return authManager.disconnectGoogle()
-  })
+  ipcMain.handle('disconnect-google', async () => authManager.disconnectGoogle())
 
-  ipcMain.handle('disconnect-microsoft', async () => {
-    return authManager.disconnectMicrosoft()
-  })
+  ipcMain.handle('disconnect-microsoft', async () => authManager.disconnectMicrosoft())
 
   ipcMain.handle('overlay-click-join', (_e, url: string) => {
     shell.openExternal(url)
@@ -185,31 +158,24 @@ function setupIpc() {
 }
 
 app.whenReady().then(async () => {
-  // Load .env (dev credentials)
   loadEnv({ path: path.join(app.getAppPath(), '.env') })
 
-  storeManager = new StoreManager()
-  authManager = new AuthManager(storeManager)
+  storeManager   = new StoreManager()
+  authManager    = new AuthManager(storeManager)
   calendarManager = new CalendarManager(authManager, storeManager)
-  overlayManager = new OverlayManager(storeManager)
-  scheduler = new ReminderScheduler(calendarManager, overlayManager, storeManager)
+  overlayManager  = new OverlayManager(storeManager)
+  reminderEngine  = new ReminderEngine(calendarManager, overlayManager, storeManager)
 
   await createMainWindow()
   createTray()
   setupIpc()
 
-  // Start polling calendars
   await calendarManager.init()
-  scheduler.start()
+  reminderEngine.start()
 
-  // Refresh tray every minute
   setInterval(updateTrayMenu, 60_000)
 })
 
-app.on('window-all-closed', () => {
-  // Keep running in tray
-})
+app.on('window-all-closed', () => { /* stay in tray */ })
 
-app.on('activate', () => {
-  mainWindow?.show()
-})
+app.on('activate', () => mainWindow?.show())
